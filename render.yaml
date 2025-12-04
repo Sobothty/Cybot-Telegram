@@ -2,6 +2,7 @@ services:
   - type: web
     name: telegram-broadcast-bot
     env: python
+    runtime: python-3.11.0
     region: oregon
     plan: free
     buildCommand: pip install -r requirements.txt
@@ -9,5 +10,3 @@ services:
     envVars:
       - key: BOT_TOKEN
         sync: false
-      - key: PYTHON_VERSION
-        value: 3.11.0
