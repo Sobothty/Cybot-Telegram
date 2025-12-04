@@ -10,6 +10,8 @@ import logging
 from typing import Dict, List, Optional
 from datetime import datetime
 from dotenv import load_dotenv
+from threading import Thread
+from flask import Flask
 
 # Load environment variables from .env file
 load_dotenv()
@@ -712,6 +714,26 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     logger.error(f"Update {update} caused error {context.error}")
 
 
+# Flask app for health checks (keeps Render web service alive)
+app = Flask(__name__)
+
+@app.route('/')
+def health_check():
+    """Health check endpoint for Render."""
+    return {'status': 'ok', 'bot': 'running'}, 200
+
+@app.route('/health')
+def health():
+    """Alternative health check endpoint."""
+    return {'status': 'healthy'}, 200
+
+
+def run_flask():
+    """Run Flask server in a separate thread."""
+    port = int(os.getenv('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
+
+
 def main() -> None:
     """Start the bot."""
     # Get token from environment variable
@@ -720,6 +742,11 @@ def main() -> None:
     if not token:
         logger.error("BOT_TOKEN environment variable not set!")
         return
+    
+    # Start Flask server in background thread for Render health checks
+    flask_thread = Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+    logger.info(f"Flask server started on port {os.getenv('PORT', 10000)}")
     
     # Create application
     application = Application.builder().token(token).build()
